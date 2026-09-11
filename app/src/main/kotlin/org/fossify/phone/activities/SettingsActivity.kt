@@ -43,6 +43,7 @@ import org.fossify.phone.dialogs.ManageVisibleTabsDialog
 import org.fossify.phone.extensions.canLaunchAccountsConfiguration
 import org.fossify.phone.extensions.config
 import org.fossify.phone.extensions.launchAccountsConfiguration
+import org.fossify.phone.helpers.TAB_DIALPAD
 import org.fossify.phone.helpers.RecentsHelper
 import org.fossify.phone.models.RecentCall
 import java.util.Locale
@@ -239,6 +240,7 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsDefaultTab.text = getDefaultTabText()
         binding.settingsDefaultTabHolder.setOnClickListener {
             val items = arrayListOf(
+                RadioItem(TAB_DIALPAD, getString(R.string.dialpad)),
                 RadioItem(TAB_CONTACTS, getString(R.string.contacts_tab)),
                 RadioItem(TAB_FAVORITES, getString(R.string.favorites_tab)),
                 RadioItem(TAB_CALL_HISTORY, getString(R.string.call_history_tab)),
@@ -254,6 +256,7 @@ class SettingsActivity : SimpleActivity() {
 
     private fun getDefaultTabText() = getString(
         when (baseConfig.defaultTab) {
+            TAB_DIALPAD -> R.string.dialpad
             TAB_CONTACTS -> R.string.contacts_tab
             TAB_FAVORITES -> R.string.favorites_tab
             TAB_CALL_HISTORY -> R.string.call_history_tab

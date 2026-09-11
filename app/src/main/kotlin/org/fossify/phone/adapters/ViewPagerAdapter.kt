@@ -10,6 +10,7 @@ import org.fossify.phone.R
 import org.fossify.phone.activities.SimpleActivity
 import org.fossify.phone.extensions.config
 import org.fossify.phone.fragments.MyViewPagerFragment
+import org.fossify.phone.helpers.TAB_DIALPAD
 import org.fossify.phone.helpers.tabsList
 
 class ViewPagerAdapter(val activity: SimpleActivity) : PagerAdapter() {
@@ -37,6 +38,10 @@ class ViewPagerAdapter(val activity: SimpleActivity) : PagerAdapter() {
     private fun getFragment(position: Int): Int {
         val showTabs = activity.config.showTabs
         val fragments = arrayListOf<Int>()
+        if (showTabs and TAB_DIALPAD > 0) {
+            fragments.add(R.layout.fragment_dialpad)
+        }
+
         if (showTabs and TAB_CONTACTS > 0) {
             fragments.add(R.layout.fragment_contacts)
         }

@@ -37,11 +37,13 @@ import org.fossify.phone.extensions.config
 import org.fossify.phone.extensions.handleFullScreenNotificationsPermission
 import org.fossify.phone.extensions.launchCreateNewContactIntent
 import org.fossify.phone.fragments.ContactsFragment
+import org.fossify.phone.fragments.DialpadFragment
 import org.fossify.phone.fragments.FavoritesFragment
 import org.fossify.phone.fragments.MyViewPagerFragment
 import org.fossify.phone.fragments.RecentsFragment
 import org.fossify.phone.helpers.OPEN_DIAL_PAD_AT_LAUNCH
 import org.fossify.phone.helpers.RecentsHelper
+import org.fossify.phone.helpers.TAB_DIALPAD
 import org.fossify.phone.helpers.tabsList
 import org.fossify.phone.models.Events
 import org.greenrobot.eventbus.EventBus
@@ -115,10 +117,6 @@ class MainActivity : SimpleActivity() {
         }
 
         updateMenuColors()
-        val properPrimaryColor = getProperPrimaryColor()
-        val dialpadIcon = resources.getColoredDrawableWithColor(R.drawable.ic_dialpad_vector, properPrimaryColor.getContrastColor())
-        binding.mainDialpadButton.setImageDrawable(dialpadIcon)
-
         updateTextColors(binding.mainHolder)
         setupTabColors()
 
@@ -193,9 +191,26 @@ class MainActivity : SimpleActivity() {
         EventBus.getDefault().unregister(this)
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == Intent.ACTION_DIAL || (intent.action == Intent.ACTION_VIEW && intent.data?.scheme == "tel")) {
+            val dialpadIndex = tabsList.filter { config.showTabs and it != 0 }.indexOf(TAB_DIALPAD)
+            if (dialpadIndex != -1) {
+                binding.viewPager.currentItem = dialpadIndex
+                getDialpadFragment()?.checkDialIntent(intent)
+            }
+        }
+    }
+
+    fun launchSetDefaultDialer() {
+        launchSetDefaultDialerIntent()
+    }
+
     private fun refreshMenuItems() {
         val currentFragment = getCurrentFragment()
         binding.mainMenu.requireToolbar().menu.apply {
+            findItem(R.id.add_number_to_contact).isVisible = currentFragment == getDialpadFragment()
             findItem(R.id.clear_call_history).isVisible = currentFragment == getRecentsFragment()
             findItem(R.id.sort).isVisible = currentFragment != getRecentsFragment()
             findItem(R.id.filter).isVisible = currentFragment != getRecentsFragment()
@@ -224,6 +239,7 @@ class MainActivity : SimpleActivity() {
 
             requireToolbar().setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
+                    R.id.add_number_to_contact -> getDialpadFragment()?.addNumberToContact()
                     R.id.clear_call_history -> clearCallHistory()
                     R.id.create_new_contact -> launchCreateNewContactIntent()
                     R.id.sort -> showSortingDialog(showCustomSorting = getCurrentFragment() is FavoritesFragment)
@@ -305,8 +321,8 @@ class MainActivity : SimpleActivity() {
         (drawable as LayerDrawable).findDrawableByLayerId(R.id.shortcut_dialpad_background).applyColorFilter(appIconColor)
         val bmp = drawable.convertToBitmap()
 
-        val intent = Intent(this, DialpadActivity::class.java)
-        intent.action = Intent.ACTION_VIEW
+        val intent = Intent(this, MainActivity::class.java)
+        intent.action = Intent.ACTION_DIAL
         return ShortcutInfo.Builder(this, "launch_dialpad")
             .setShortLabel(newEvent)
             .setLongLabel(newEvent)
@@ -334,6 +350,10 @@ class MainActivity : SimpleActivity() {
         val showTabs = config.showTabs
         val icons = mutableListOf<Int>()
 
+        if (showTabs and TAB_DIALPAD != 0) {
+            icons.add(R.drawable.ic_dialpad_vector)
+        }
+
         if (showTabs and TAB_CONTACTS != 0) {
             icons.add(R.drawable.ic_person_vector)
         }
@@ -353,6 +373,10 @@ class MainActivity : SimpleActivity() {
         val showTabs = config.showTabs
         val icons = ArrayList<Int>()
 
+        if (showTabs and TAB_DIALPAD != 0) {
+            icons.add(R.drawable.ic_dialpad_vector)
+        }
+
         if (showTabs and TAB_CONTACTS != 0) {
             icons.add(R.drawable.ic_person_outline_vector)
         }
@@ -369,7 +393,7 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun initFragments() {
-        binding.viewPager.offscreenPageLimit = 2
+        binding.viewPager.offscreenPageLimit = 3
         binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrollStateChanged(state: Int) {}
 
@@ -394,13 +418,17 @@ class MainActivity : SimpleActivity() {
                     wantedTab = binding.mainTabsHolder.tabCount - 1
                 }
 
+                if (intent.action == Intent.ACTION_DIAL || (intent.action == Intent.ACTION_VIEW && intent.data?.scheme == "tel")) {
+                    val dialpadIndex = tabsList.filter { config.showTabs and it != 0 }.indexOf(TAB_DIALPAD)
+                    if (dialpadIndex != -1) {
+                        wantedTab = dialpadIndex
+                        getDialpadFragment()?.checkDialIntent(intent)
+                    }
+                }
+
                 binding.mainTabsHolder.getTabAt(wantedTab)?.select()
                 refreshMenuItems()
             }, 100L)
-        }
-
-        binding.mainDialpadButton.setOnClickListener {
-            launchDialpad()
         }
 
         binding.viewPager.onGlobalLayout {
@@ -408,7 +436,10 @@ class MainActivity : SimpleActivity() {
         }
 
         if (config.openDialPadAtLaunch && !launchedDialer) {
-            launchDialpad()
+            val dialpadIndex = tabsList.filter { config.showTabs and it != 0 }.indexOf(TAB_DIALPAD)
+            if (dialpadIndex != -1) {
+                binding.viewPager.currentItem = dialpadIndex
+            }
             launchedDialer = true
         }
     }
@@ -416,13 +447,15 @@ class MainActivity : SimpleActivity() {
     private fun setupTabs() {
         binding.viewPager.adapter = null
         binding.mainTabsHolder.removeAllTabs()
-        tabsList.forEachIndexed { index, value ->
+        var visibleTabIndex = 0
+        tabsList.forEach { value ->
             if (config.showTabs and value != 0) {
                 binding.mainTabsHolder.newTab().setCustomView(R.layout.bottom_tablayout_item).apply {
-                    customView?.findViewById<ImageView>(R.id.tab_item_icon)?.setImageDrawable(getTabIcon(index))
-                    customView?.findViewById<TextView>(R.id.tab_item_label)?.text = getTabLabel(index)
+                    customView?.findViewById<ImageView>(R.id.tab_item_icon)?.setImageDrawable(getTabIcon(visibleTabIndex))
+                    customView?.findViewById<TextView>(R.id.tab_item_label)?.text = getTabLabel(visibleTabIndex)
                     AutofitHelper.create(customView?.findViewById(R.id.tab_item_label))
                     binding.mainTabsHolder.addTab(this)
+                    visibleTabIndex++
                 }
             }
         }
@@ -449,9 +482,12 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun getTabIcon(position: Int): Drawable {
-        val drawableId = when (position) {
-            0 -> R.drawable.ic_person_vector
-            1 -> R.drawable.ic_star_vector
+        val showTabs = config.showTabs
+        val visibleTabs = tabsList.filter { showTabs and it != 0 }
+        val drawableId = when (visibleTabs[position]) {
+            TAB_DIALPAD -> R.drawable.ic_dialpad_vector
+            TAB_CONTACTS -> R.drawable.ic_person_vector
+            TAB_FAVORITES -> R.drawable.ic_star_vector
             else -> R.drawable.ic_clock_vector
         }
 
@@ -459,9 +495,12 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun getTabLabel(position: Int): String {
-        val stringId = when (position) {
-            0 -> R.string.contacts_tab
-            1 -> R.string.favorites_tab
+        val showTabs = config.showTabs
+        val visibleTabs = tabsList.filter { showTabs and it != 0 }
+        val stringId = when (visibleTabs[position]) {
+            TAB_DIALPAD -> R.string.dialpad
+            TAB_CONTACTS -> R.string.contacts_tab
+            TAB_FAVORITES -> R.string.favorites_tab
             else -> R.string.call_history_tab
         }
 
@@ -487,8 +526,9 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun launchDialpad() {
-        Intent(applicationContext, DialpadActivity::class.java).apply {
-            startActivity(this)
+        val dialpadIndex = tabsList.filter { config.showTabs and it != 0 }.indexOf(TAB_DIALPAD)
+        if (dialpadIndex != -1) {
+            binding.viewPager.currentItem = dialpadIndex
         }
     }
 
@@ -502,6 +542,10 @@ class MainActivity : SimpleActivity() {
     private fun getAllFragments(): ArrayList<MyViewPagerFragment<*>?> {
         val showTabs = config.showTabs
         val fragments = arrayListOf<MyViewPagerFragment<*>?>()
+
+        if (showTabs and TAB_DIALPAD > 0) {
+            fragments.add(getDialpadFragment())
+        }
 
         if (showTabs and TAB_CONTACTS > 0) {
             fragments.add(getContactsFragment())
@@ -520,6 +564,8 @@ class MainActivity : SimpleActivity() {
 
     private fun getCurrentFragment(): MyViewPagerFragment<*>? = getAllFragments().getOrNull(binding.viewPager.currentItem)
 
+    private fun getDialpadFragment(): DialpadFragment? = findViewById(R.id.dialpad_fragment)
+
     private fun getContactsFragment(): ContactsFragment? = findViewById(R.id.contacts_fragment)
 
     private fun getFavoritesFragment(): FavoritesFragment? = findViewById(R.id.favorites_fragment)
@@ -528,29 +574,15 @@ class MainActivity : SimpleActivity() {
 
     private fun getDefaultTab(): Int {
         val showTabsMask = config.showTabs
+        val visibleTabs = tabsList.filter { showTabsMask and it != 0 }
+        
         return when (config.defaultTab) {
-            TAB_LAST_USED -> if (config.lastUsedViewPagerPage < binding.mainTabsHolder.tabCount) config.lastUsedViewPagerPage else 0
-            TAB_CONTACTS -> 0
-            TAB_FAVORITES -> if (showTabsMask and TAB_CONTACTS > 0) 1 else 0
-            else -> {
-                if (showTabsMask and TAB_CALL_HISTORY > 0) {
-                    if (showTabsMask and TAB_CONTACTS > 0) {
-                        if (showTabsMask and TAB_FAVORITES > 0) {
-                            2
-                        } else {
-                            1
-                        }
-                    } else {
-                        if (showTabsMask and TAB_FAVORITES > 0) {
-                            1
-                        } else {
-                            0
-                        }
-                    }
-                } else {
-                    0
-                }
-            }
+            TAB_LAST_USED -> if (config.lastUsedViewPagerPage < visibleTabs.size) config.lastUsedViewPagerPage else 0
+            TAB_DIALPAD -> visibleTabs.indexOf(TAB_DIALPAD).coerceAtLeast(0)
+            TAB_CONTACTS -> visibleTabs.indexOf(TAB_CONTACTS).coerceAtLeast(0)
+            TAB_FAVORITES -> visibleTabs.indexOf(TAB_FAVORITES).coerceAtLeast(0)
+            TAB_CALL_HISTORY -> visibleTabs.indexOf(TAB_CALL_HISTORY).coerceAtLeast(0)
+            else -> 0
         }
     }
 
