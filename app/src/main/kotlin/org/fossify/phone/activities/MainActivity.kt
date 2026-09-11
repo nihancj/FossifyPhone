@@ -350,20 +350,18 @@ class MainActivity : SimpleActivity() {
         val showTabs = config.showTabs
         val icons = mutableListOf<Int>()
 
-        if (showTabs and TAB_DIALPAD != 0) {
-            icons.add(R.drawable.ic_dialpad_vector)
-        }
-
-        if (showTabs and TAB_CONTACTS != 0) {
-            icons.add(R.drawable.ic_person_vector)
-        }
-
-        if (showTabs and TAB_FAVORITES != 0) {
-            icons.add(R.drawable.ic_star_vector)
-        }
-
-        if (showTabs and TAB_CALL_HISTORY != 0) {
-            icons.add(R.drawable.ic_clock_filled_vector)
+        tabsList.forEach { tab ->
+            if (showTabs and tab != 0) {
+                icons.add(
+                    when (tab) {
+                        TAB_DIALPAD -> R.drawable.ic_dialpad_vector
+                        TAB_CONTACTS -> R.drawable.ic_person_vector
+                        TAB_FAVORITES -> R.drawable.ic_star_vector
+                        TAB_CALL_HISTORY -> R.drawable.ic_clock_filled_vector
+                        else -> R.drawable.ic_person_vector
+                    }
+                )
+            }
         }
 
         return icons
@@ -373,20 +371,18 @@ class MainActivity : SimpleActivity() {
         val showTabs = config.showTabs
         val icons = ArrayList<Int>()
 
-        if (showTabs and TAB_DIALPAD != 0) {
-            icons.add(R.drawable.ic_dialpad_vector)
-        }
-
-        if (showTabs and TAB_CONTACTS != 0) {
-            icons.add(R.drawable.ic_person_outline_vector)
-        }
-
-        if (showTabs and TAB_FAVORITES != 0) {
-            icons.add(R.drawable.ic_star_outline_vector)
-        }
-
-        if (showTabs and TAB_CALL_HISTORY != 0) {
-            icons.add(R.drawable.ic_clock_vector)
+        tabsList.forEach { tab ->
+            if (showTabs and tab != 0) {
+                icons.add(
+                    when (tab) {
+                        TAB_DIALPAD -> R.drawable.ic_dialpad_vector
+                        TAB_CONTACTS -> R.drawable.ic_person_outline_vector
+                        TAB_FAVORITES -> R.drawable.ic_star_outline_vector
+                        TAB_CALL_HISTORY -> R.drawable.ic_clock_vector
+                        else -> R.drawable.ic_person_outline_vector
+                    }
+                )
+            }
         }
 
         return icons
@@ -415,7 +411,10 @@ class MainActivity : SimpleActivity() {
 
                 // open the Recents tab if we got here by clicking a missed call notification
                 if (intent.action == Intent.ACTION_VIEW && config.showTabs and TAB_CALL_HISTORY > 0) {
-                    wantedTab = binding.mainTabsHolder.tabCount - 1
+                    val recentsIndex = tabsList.filter { config.showTabs and it != 0 }.indexOf(TAB_CALL_HISTORY)
+                    if (recentsIndex != -1) {
+                        wantedTab = recentsIndex
+                    }
                 }
 
                 if (intent.action == Intent.ACTION_DIAL || (intent.action == Intent.ACTION_VIEW && intent.data?.scheme == "tel")) {
@@ -543,20 +542,18 @@ class MainActivity : SimpleActivity() {
         val showTabs = config.showTabs
         val fragments = arrayListOf<MyViewPagerFragment<*>?>()
 
-        if (showTabs and TAB_DIALPAD > 0) {
-            fragments.add(getDialpadFragment())
-        }
-
-        if (showTabs and TAB_CONTACTS > 0) {
-            fragments.add(getContactsFragment())
-        }
-
-        if (showTabs and TAB_FAVORITES > 0) {
-            fragments.add(getFavoritesFragment())
-        }
-
-        if (showTabs and TAB_CALL_HISTORY > 0) {
-            fragments.add(getRecentsFragment())
+        tabsList.forEach { tab ->
+            if (showTabs and tab > 0) {
+                fragments.add(
+                    when (tab) {
+                        TAB_DIALPAD -> getDialpadFragment()
+                        TAB_CONTACTS -> getContactsFragment()
+                        TAB_FAVORITES -> getFavoritesFragment()
+                        TAB_CALL_HISTORY -> getRecentsFragment()
+                        else -> getContactsFragment()
+                    }
+                )
+            }
         }
 
         return fragments

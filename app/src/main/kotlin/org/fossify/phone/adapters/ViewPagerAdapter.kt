@@ -38,20 +38,18 @@ class ViewPagerAdapter(val activity: SimpleActivity) : PagerAdapter() {
     private fun getFragment(position: Int): Int {
         val showTabs = activity.config.showTabs
         val fragments = arrayListOf<Int>()
-        if (showTabs and TAB_DIALPAD > 0) {
-            fragments.add(R.layout.fragment_dialpad)
-        }
-
-        if (showTabs and TAB_CONTACTS > 0) {
-            fragments.add(R.layout.fragment_contacts)
-        }
-
-        if (showTabs and TAB_FAVORITES > 0) {
-            fragments.add(R.layout.fragment_favorites)
-        }
-
-        if (showTabs and TAB_CALL_HISTORY > 0) {
-            fragments.add(R.layout.fragment_recents)
+        tabsList.forEach { tab ->
+            if (showTabs and tab > 0) {
+                fragments.add(
+                    when (tab) {
+                        TAB_DIALPAD -> R.layout.fragment_dialpad
+                        TAB_CONTACTS -> R.layout.fragment_contacts
+                        TAB_FAVORITES -> R.layout.fragment_favorites
+                        TAB_CALL_HISTORY -> R.layout.fragment_recents
+                        else -> R.layout.fragment_contacts
+                    }
+                )
+            }
         }
 
         return if (position < fragments.size) fragments[position] else fragments.last()

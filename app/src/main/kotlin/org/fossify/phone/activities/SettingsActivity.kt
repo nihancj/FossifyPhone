@@ -241,9 +241,9 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsDefaultTabHolder.setOnClickListener {
             val items = arrayListOf(
                 RadioItem(TAB_DIALPAD, getString(R.string.dialpad)),
+                RadioItem(TAB_CALL_HISTORY, getString(R.string.call_history_tab)),
                 RadioItem(TAB_CONTACTS, getString(R.string.contacts_tab)),
                 RadioItem(TAB_FAVORITES, getString(R.string.favorites_tab)),
-                RadioItem(TAB_CALL_HISTORY, getString(R.string.call_history_tab)),
                 RadioItem(TAB_LAST_USED, getString(R.string.last_used_tab))
             )
 
