@@ -159,8 +159,8 @@ class DialpadFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
             dialpadCallButton.setOnClickListener { initCall(dialpadInput.value) }
             dialpadCallButton.setOnLongClickListener { initCallWithSimSelector() }
             dialpadInput.onTextChangeListener { dialpadValueChanged(it) }
-            dialpadInput.requestFocus()
             dialpadInput.disableKeyboard()
+            dialpadInput.requestFocus()
         }
 
         ContactsHelper(activity!!).getContacts(showOnlyContactsWithNumbers = true) { allContacts ->

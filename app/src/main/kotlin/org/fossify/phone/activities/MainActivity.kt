@@ -401,6 +401,7 @@ class MainActivity : SimpleActivity() {
                     it?.finishActMode()
                 }
                 refreshMenuItems()
+                hideKeyboard()
             }
         })
 
