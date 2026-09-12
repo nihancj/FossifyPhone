@@ -209,15 +209,15 @@ class MainActivity : SimpleActivity() {
 
     private fun refreshMenuItems() {
         val currentFragment = getCurrentFragment()
+        val isDialpad = currentFragment == getDialpadFragment()
         binding.mainMenu.requireToolbar().menu.apply {
-            findItem(R.id.add_number_to_contact).isVisible = currentFragment == getDialpadFragment()
+            findItem(R.id.add_number_to_contact).isVisible = isDialpad
             findItem(R.id.clear_call_history).isVisible = currentFragment == getRecentsFragment()
-            findItem(R.id.sort).isVisible = currentFragment != getRecentsFragment()
-            findItem(R.id.filter).isVisible = currentFragment != getRecentsFragment()
+            findItem(R.id.sort).isVisible = currentFragment != getRecentsFragment() && !isDialpad
+            findItem(R.id.filter).isVisible = currentFragment != getRecentsFragment() && !isDialpad
             findItem(R.id.create_new_contact).isVisible = currentFragment == getContactsFragment()
             findItem(R.id.change_view_type).isVisible = currentFragment == getFavoritesFragment()
             findItem(R.id.column_count).isVisible = currentFragment == getFavoritesFragment() && config.viewType == VIEW_TYPE_GRID
-            findItem(R.id.more_apps_from_us).isVisible = !resources.getBoolean(R.bool.hide_google_relations)
         }
     }
 
