@@ -1,14 +1,15 @@
-package org.fossify.phone.activities
+package org.fossify.phone.fragments
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.Telephony.Sms.Intents.SECRET_CODE_ACTION
+import android.provider.Telephony
 import android.telephony.TelephonyManager
+import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -17,55 +18,28 @@ import android.view.ViewConfiguration
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.fossify.commons.extensions.applyColorFilter
-import org.fossify.commons.extensions.beVisibleIf
-import org.fossify.commons.extensions.checkAppSideloading
-import org.fossify.commons.extensions.getColorStateList
-import org.fossify.commons.extensions.getColoredDrawableWithColor
-import org.fossify.commons.extensions.getContrastColor
-import org.fossify.commons.extensions.getMyContactsCursor
-import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.getProperTextColor
-import org.fossify.commons.extensions.isDefaultDialer
-import org.fossify.commons.extensions.normalizeString
-import org.fossify.commons.extensions.onTextChangeListener
-import org.fossify.commons.extensions.performHapticFeedback
-import org.fossify.commons.extensions.updateTextColors
-import org.fossify.commons.extensions.value
-import org.fossify.commons.extensions.viewBinding
-import org.fossify.commons.helpers.ContactsHelper
-import org.fossify.commons.helpers.KeypadHelper
-import org.fossify.commons.helpers.LOWER_ALPHA_INT
-import org.fossify.commons.helpers.MyContactsContentProvider
-import org.fossify.commons.helpers.NavigationIcon
-import org.fossify.commons.helpers.REQUEST_CODE_SET_DEFAULT_DIALER
-import org.fossify.commons.helpers.isOreoPlus
+import org.fossify.commons.extensions.*
+import org.fossify.commons.helpers.*
 import org.fossify.commons.models.contacts.Contact
 import org.fossify.phone.R
+import org.fossify.phone.activities.MainActivity
+import org.fossify.phone.activities.SimpleActivity
 import org.fossify.phone.adapters.ContactsAdapter
-import org.fossify.phone.databinding.ActivityDialpadBinding
-import org.fossify.phone.extensions.addCharacter
-import org.fossify.phone.extensions.areMultipleSIMsAvailable
-import org.fossify.phone.extensions.boundingBox
-import org.fossify.phone.extensions.config
-import org.fossify.phone.extensions.disableKeyboard
-import org.fossify.phone.extensions.getKeyEvent
-import org.fossify.phone.extensions.setupWithContacts
-import org.fossify.phone.extensions.startAddContactIntent
-import org.fossify.phone.extensions.startCallWithConfirmationCheck
-import org.fossify.phone.extensions.startContactDetailsIntent
+import org.fossify.phone.databinding.FragmentDialpadBinding
+import org.fossify.phone.extensions.*
 import org.fossify.phone.helpers.DIALPAD_TONE_LENGTH_MS
 import org.fossify.phone.helpers.RecentsHelper
 import org.fossify.phone.helpers.ToneGeneratorHelper
 import org.fossify.phone.models.SpeedDial
-import java.util.Locale
+import java.util.*
 import kotlin.math.roundToInt
 
-class DialpadActivity : SimpleActivity() {
-    private val binding by viewBinding(ActivityDialpadBinding::inflate)
+class DialpadFragment(context: Context, attributeSet: AttributeSet) : MyViewPagerFragment<MyViewPagerFragment.DialpadInnerBinding>(context, attributeSet) {
+    private lateinit var binding: FragmentDialpadBinding
 
     private var allContacts = ArrayList<Contact>()
     private var speedDialValues = ArrayList<SpeedDial>()
@@ -89,25 +63,18 @@ class DialpadActivity : SimpleActivity() {
         )
     }
 
-    @Suppress("LongMethod")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(binding.root)
+    override fun onFinishInflate() {
+        super.onFinishInflate()
+        binding = FragmentDialpadBinding.bind(this)
+        innerBinding = DialpadInnerBinding(binding)
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun setupFragment() {
         hasRussianLocale = Locale.getDefault().language == "ru"
 
-        binding.apply {
-            setupEdgeToEdge(
-                padBottomImeAndSystem = listOf(dialpadList, dialpadHolder)
-            )
-            setupMaterialScrollListener(binding.dialpadList, binding.dialpadAppbar)
-        }
-
-        if (checkAppSideloading()) {
-            return
-        }
-
         binding.dialpadWrapper.apply {
-            if (config.hideDialpadNumbers) {
+            if (activity!!.config.hideDialpadNumbers) {
                 dialpad1Holder.isVisible = false
                 dialpad2Holder.isVisible = false
                 dialpad3Holder.isVisible = false
@@ -136,17 +103,14 @@ class DialpadActivity : SimpleActivity() {
                 dialpadAsteriskHolder,
                 dialpadHashtagHolder
             ).forEach {
-                it.background =
-                    ResourcesCompat.getDrawable(resources, R.drawable.pill_background, theme)
+                it.background = ResourcesCompat.getDrawable(resources, R.drawable.pill_background, activity!!.theme)
                 it.background?.alpha = LOWER_ALPHA_INT
             }
         }
 
-        setupOptionsMenu()
-        speedDialValues = config.getSpeedDialValues()
-        privateCursor = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
-
-        toneGeneratorHelper = ToneGeneratorHelper(this, DIALPAD_TONE_LENGTH_MS)
+        speedDialValues = activity!!.config.getSpeedDialValues()
+        privateCursor = activity!!.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
+        toneGeneratorHelper = ToneGeneratorHelper(activity!!, DIALPAD_TONE_LENGTH_MS)
 
         binding.dialpadWrapper.apply {
             if (hasRussianLocale) {
@@ -195,15 +159,16 @@ class DialpadActivity : SimpleActivity() {
             dialpadCallButton.setOnClickListener { initCall(dialpadInput.value) }
             dialpadCallButton.setOnLongClickListener { initCallWithSimSelector() }
             dialpadInput.onTextChangeListener { dialpadValueChanged(it) }
-            dialpadInput.requestFocus()
             dialpadInput.disableKeyboard()
+            dialpadInput.requestFocus()
         }
 
-        ContactsHelper(this).getContacts(showOnlyContactsWithNumbers = true) { allContacts ->
+        ContactsHelper(activity!!).getContacts(showOnlyContactsWithNumbers = true) { allContacts ->
             gotContacts(allContacts)
         }
+    }
 
-        val properPrimaryColor = getProperPrimaryColor()
+    override fun setupColors(textColor: Int, primaryColor: Int, properPrimaryColor: Int) {
         binding.apply {
             val callIcon = resources.getColoredDrawableWithColor(
                 drawableId = R.drawable.ic_phone_vector,
@@ -211,8 +176,9 @@ class DialpadActivity : SimpleActivity() {
             )
             dialpadCallButton.setImageDrawable(callIcon)
             dialpadCallButton.background.applyColorFilter(properPrimaryColor)
+            dialpadClearChar.applyColorFilter(textColor)
 
-            letterFastscroller.textColor = getProperTextColor().getColorStateList()
+            letterFastscroller.textColor = textColor.getColorStateList()
             letterFastscroller.pressedTextColor = properPrimaryColor
             letterFastscrollerThumb.setupWithFastScroller(letterFastscroller)
             letterFastscrollerThumb.textColor = properPrimaryColor.getContrastColor()
@@ -220,28 +186,12 @@ class DialpadActivity : SimpleActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        updateTextColors(binding.dialpadHolder)
-        binding.dialpadClearChar.applyColorFilter(getProperTextColor())
-        setupTopAppBar(binding.dialpadAppbar, NavigationIcon.Arrow)
-    }
+    override fun onSearchClosed() {}
 
-    private fun setupOptionsMenu() {
-        binding.dialpadToolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.add_number_to_contact -> addNumberToContact()
-                else -> return@setOnMenuItemClickListener false
-            }
-            return@setOnMenuItemClickListener true
-        }
-    }
+    override fun onSearchQueryChanged(text: String) {}
 
-    private fun checkDialIntent(): Boolean {
-        return if (
-            (intent.action == Intent.ACTION_DIAL || intent.action == Intent.ACTION_VIEW)
-            && intent.data != null && intent.dataString?.contains("tel:") == true
-        ) {
+    fun checkDialIntent(intent: Intent): Boolean {
+        return if (intent.dataString?.contains("tel:") == true) {
             val number = Uri.decode(intent.dataString).substringAfter("tel:")
             binding.dialpadInput.setText(number)
             binding.dialpadInput.setSelection(number.length)
@@ -251,8 +201,8 @@ class DialpadActivity : SimpleActivity() {
         }
     }
 
-    private fun addNumberToContact() {
-        startAddContactIntent(binding.dialpadInput.value)
+    fun addNumberToContact() {
+        activity!!.startAddContactIntent(binding.dialpadInput.value)
     }
 
     private fun dialpadPressed(char: Char, view: View?) {
@@ -270,7 +220,7 @@ class DialpadActivity : SimpleActivity() {
     }
 
     private fun clearInputWithDelay() {
-        lifecycleScope.launch {
+        findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
             delay(1000)
             clearInput()
         }
@@ -279,14 +229,14 @@ class DialpadActivity : SimpleActivity() {
     private fun gotContacts(newContacts: ArrayList<Contact>) {
         allContacts = newContacts
 
-        val privateContacts = MyContactsContentProvider.getContacts(this, privateCursor)
+        val privateContacts = MyContactsContentProvider.getContacts(activity!!, privateCursor)
         if (privateContacts.isNotEmpty()) {
             allContacts.addAll(privateContacts)
             allContacts.sort()
         }
 
-        runOnUiThread {
-            if (!checkDialIntent() && binding.dialpadInput.value.isEmpty()) {
+        activity?.runOnUiThread {
+            if (binding.dialpadInput.value.isEmpty()) {
                 dialpadValueChanged("")
             }
         }
@@ -297,22 +247,21 @@ class DialpadActivity : SimpleActivity() {
         if (len > 8 && text.startsWith("*#*#") && text.endsWith("#*#*")) {
             val secretCode = text.substring(4, text.length - 4)
             if (isOreoPlus()) {
-                if (isDefaultDialer()) {
-                    getSystemService(TelephonyManager::class.java)?.sendDialerSpecialCode(secretCode)
+                if (activity!!.isDefaultDialer()) {
+                    activity!!.getSystemService(TelephonyManager::class.java)?.sendDialerSpecialCode(secretCode)
                 } else {
-                    launchSetDefaultDialerIntent()
+                    (activity as? MainActivity)?.launchSetDefaultDialer()
                 }
             } else {
-                val intent =
-                    Intent(SECRET_CODE_ACTION, "android_secret_code://$secretCode".toUri())
-                sendBroadcast(intent)
+                val intent = Intent(Telephony.Sms.Intents.SECRET_CODE_ACTION, "android_secret_code://$secretCode".toUri())
+                activity!!.sendBroadcast(intent)
             }
             return
         }
 
         (binding.dialpadList.adapter as? ContactsAdapter)?.finishActMode()
 
-        val filtered = allContacts.filter { contact ->
+        val filtered = allContacts.asSequence().map { contact ->
             var convertedName = KeypadHelper.convertKeypadLettersToDigits(
                 contact.name.normalizeString()
             ).filterNot { it.isWhitespace() }
@@ -325,25 +274,30 @@ class DialpadActivity : SimpleActivity() {
                 }
                 convertedName = currConvertedName
             }
-
-            contact.doesContainPhoneNumber(text) || (convertedName.contains(text, true))
-        }.sortedWith(compareBy {
-            !it.doesContainPhoneNumber(text)
-        }).toMutableList() as ArrayList<Contact>
+            contact to convertedName
+        }.filter { (contact, convertedName) ->
+            contact.doesContainPhoneNumber(text) || convertedName.contains(text, true)
+        }.sortedWith(compareBy({ (_, convertedName) ->
+            !convertedName.startsWith(text, true)
+        }, { (_, convertedName) ->
+            !convertedName.contains(text, true)
+        }, { (contact, _) ->
+            !contact.doesContainPhoneNumber(text)
+        })).map { it.first }.toMutableList() as ArrayList<Contact>
 
         binding.letterFastscroller.setupWithContacts(binding.dialpadList, filtered)
 
         ContactsAdapter(
-            activity = this,
+            activity = activity!!,
             contacts = filtered,
             recyclerView = binding.dialpadList,
             highlightText = text,
             itemClick = {
-                startCallWithConfirmationCheck(it as Contact)
+                activity!!.startCallWithConfirmationCheck(it as Contact)
                 clearInputWithDelay()
             },
             profileIconClick = {
-                startContactDetailsIntent(it as Contact)
+                activity!!.startContactDetailsIntent(it as Contact)
             }).apply {
             binding.dialpadList.adapter = this
         }
@@ -352,22 +306,15 @@ class DialpadActivity : SimpleActivity() {
         binding.dialpadList.beVisibleIf(filtered.isNotEmpty())
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
-        super.onActivityResult(requestCode, resultCode, resultData)
-        if (requestCode == REQUEST_CODE_SET_DEFAULT_DIALER && isDefaultDialer()) {
-            dialpadValueChanged(binding.dialpadInput.value)
-        }
-    }
-
     private fun initCall(number: String = binding.dialpadInput.value, name: String? = null) {
         if (number.isNotEmpty()) {
-            startCallWithConfirmationCheck(number, name ?: number)
+            activity!!.startCallWithConfirmationCheck(number, name ?: number)
             clearInputWithDelay()
         } else {
-            RecentsHelper(this).getRecentCalls(queryLimit = 1) {
+            RecentsHelper(activity!!).getRecentCalls(queryLimit = 1) {
                 val mostRecentNumber = it.firstOrNull()?.phoneNumber
                 if (!mostRecentNumber.isNullOrEmpty()) {
-                    runOnUiThread {
+                    activity?.runOnUiThread {
                         binding.dialpadInput.setText(mostRecentNumber)
                     }
                 }
@@ -377,8 +324,8 @@ class DialpadActivity : SimpleActivity() {
 
     private fun initCallWithSimSelector(): Boolean {
         val number = binding.dialpadInput.value
-        return if (areMultipleSIMsAvailable() && number.isNotEmpty()) {
-            startCallWithConfirmationCheck(
+        return if (activity!!.areMultipleSIMsAvailable() && number.isNotEmpty()) {
+            activity!!.startCallWithConfirmationCheck(
                 recipient = number,
                 name = number,
                 forceSimSelector = true
@@ -393,7 +340,7 @@ class DialpadActivity : SimpleActivity() {
         if (binding.dialpadInput.value.length == 1) {
             val speedDial = speedDialValues.firstOrNull { it.id == id }
             if (speedDial?.isValid() == true) {
-                initCall(speedDial.number, speedDial.getName(this))
+                initCall(speedDial.number, speedDial.getName(activity!!))
                 return true
             }
         }
@@ -401,14 +348,14 @@ class DialpadActivity : SimpleActivity() {
     }
 
     private fun startDialpadTone(char: Char) {
-        if (config.dialpadBeeps) {
+        if (activity!!.config.dialpadBeeps) {
             pressedKeys.add(char)
             toneGeneratorHelper?.startTone(char)
         }
     }
 
     private fun stopDialpadTone(char: Char) {
-        if (config.dialpadBeeps) {
+        if (activity!!.config.dialpadBeeps) {
             if (!pressedKeys.remove(char)) return
             if (pressedKeys.isEmpty()) {
                 toneGeneratorHelper?.stopTone()
@@ -419,7 +366,7 @@ class DialpadActivity : SimpleActivity() {
     }
 
     private fun maybePerformDialpadHapticFeedback(view: View?) {
-        if (config.dialpadVibration) {
+        if (activity!!.config.dialpadVibration) {
             view?.performHapticFeedback()
         }
     }

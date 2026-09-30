@@ -164,7 +164,8 @@ class CallActivity : SimpleActivity() {
         }
 
         callAdd.setOnClickListener {
-            Intent(applicationContext, DialpadActivity::class.java).apply {
+            Intent(applicationContext, MainActivity::class.java).apply {
+                action = Intent.ACTION_DIAL
                 addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
                 startActivity(this)
             }

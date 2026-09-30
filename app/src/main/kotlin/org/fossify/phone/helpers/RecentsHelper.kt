@@ -94,8 +94,10 @@ class RecentsHelper(private val context: Context) {
             callA.name != callB.name &&
                     callA.name != callA.phoneNumber &&
                     callB.name != callB.phoneNumber
+        val differentType = callA.type != callB.type &&
+            callA.type + callB.type != 3    // Consider incoming(1) and outgoing(2) as same type
 
-        if (differentSim || differentDay || namesAreBothRealAndDifferent) return false
+        if (differentSim || differentDay || namesAreBothRealAndDifferent || differentType) return false
 
         @Suppress("DEPRECATION")
         return PhoneNumberUtils.compare(callA.phoneNumber, callB.phoneNumber)

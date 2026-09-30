@@ -81,6 +81,9 @@ class RecentCallsAdapter(
     private lateinit var outgoingCallIcon: Drawable
     private lateinit var incomingCallIcon: Drawable
     private lateinit var incomingMissedCallIcon: Drawable
+    private lateinit var incomingRejectedCallIcon: Drawable
+    private lateinit var incomingBlockedCallIcon: Drawable
+    private lateinit var incomingBlocked2CallIcon: Drawable
     var fontSize: Float = activity.getTextSize()
     private val areMultipleSIMsAvailable = activity.areMultipleSIMsAvailable()
     private var missedCallColor = resources.getColor(R.color.color_missed_call)
@@ -214,6 +217,9 @@ class RecentCallsAdapter(
         outgoingCallIcon = resources.getColoredDrawableWithColor(R.drawable.ic_call_made_vector, outgoingCallColor)
         incomingCallIcon = resources.getColoredDrawableWithColor(R.drawable.ic_call_received_vector, incomingCallColor)
         incomingMissedCallIcon = resources.getColoredDrawableWithColor(R.drawable.ic_call_missed_vector, missedCallColor)
+        incomingRejectedCallIcon = resources.getColoredDrawableWithColor(R.drawable.ic_call_rejected_vector, incomingCallColor)
+        incomingBlockedCallIcon = resources.getColoredDrawableWithColor(R.drawable.ic_call_blocked_vector, incomingCallColor)
+        incomingBlocked2CallIcon = resources.getColoredDrawableWithColor(R.drawable.ic_call_blocked2_vector, missedCallColor)
     }
 
     private fun callContact(useSimOne: Boolean) {
@@ -600,7 +606,10 @@ class RecentCallsAdapter(
 
                 val drawable = when (call.type) {
                     Calls.OUTGOING_TYPE -> outgoingCallIcon
+                    Calls.INCOMING_TYPE -> incomingCallIcon
                     Calls.MISSED_TYPE -> incomingMissedCallIcon
+                    Calls.REJECTED_TYPE -> incomingBlockedCallIcon
+                    Calls.BLOCKED_TYPE -> incomingBlocked2CallIcon
                     else -> incomingCallIcon
                 }
 

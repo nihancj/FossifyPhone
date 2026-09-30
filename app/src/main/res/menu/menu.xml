@@ -4,6 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="AlwaysShowAction,AppCompatResource">
     <item
+        android:id="@+id/add_number_to_contact"
+        android:icon="@drawable/ic_plus_vector"
+        android:title="@string/add_number_to_contact"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/sort"
         android:icon="@drawable/ic_sort_vector"
         android:showAsAction="always"

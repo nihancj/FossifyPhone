@@ -8,6 +8,7 @@
     <string name="could_not_access_contacts">Could not access your contacts</string>
 
     <!-- Recents -->
+    <string name="call_history_tab">Recents</string>
     <string name="no_previous_calls">No previous calls have been found</string>
     <string name="could_not_access_the_call_history">Could not access the call history</string>
     <string name="request_access">Request access</string>
@@ -18,7 +19,7 @@
     <string name="show_call_details">Show call details</string>
 
     <!-- Dialpad -->
-    <string name="dialpad">Dialpad</string>
+    <string name="dialpad">Keypad</string>
     <string name="asterisk">Asterisk</string>
     <string name="hashtag">Hashtag</string>
     <string name="call_number">Call number</string>

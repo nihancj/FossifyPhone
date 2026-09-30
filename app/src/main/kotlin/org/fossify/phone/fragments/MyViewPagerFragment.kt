@@ -14,6 +14,7 @@ import org.fossify.phone.activities.MainActivity
 import org.fossify.phone.activities.SimpleActivity
 import org.fossify.phone.adapters.ContactsAdapter
 import org.fossify.phone.adapters.RecentCallsAdapter
+import org.fossify.phone.databinding.FragmentDialpadBinding
 import org.fossify.phone.databinding.FragmentLettersLayoutBinding
 import org.fossify.phone.databinding.FragmentRecentsBinding
 import org.fossify.phone.extensions.config
@@ -36,7 +37,7 @@ abstract class MyViewPagerFragment<BINDING : MyViewPagerFragment.InnerBinding>(c
     }
 
     fun startNameWithSurnameChanged(startNameWithSurname: Boolean) {
-        if (this !is RecentsFragment) {
+        if (this !is RecentsFragment && this !is DialpadFragment) {
             (innerBinding.fragmentList?.adapter as? ContactsAdapter)?.apply {
                 config.sorting = if (startNameWithSurname) SORT_BY_SURNAME else SORT_BY_FIRST_NAME
                 (this@MyViewPagerFragment.activity!! as MainActivity).refreshFragments()
@@ -47,18 +48,28 @@ abstract class MyViewPagerFragment<BINDING : MyViewPagerFragment.InnerBinding>(c
     fun finishActMode() {
         (innerBinding.fragmentList?.adapter as? MyRecyclerViewAdapter)?.finishActMode()
         (innerBinding.recentsList?.adapter as? MyRecyclerViewAdapter)?.finishActMode()
+        (innerBinding.dialpadList?.adapter as? MyRecyclerViewAdapter)?.finishActMode()
     }
 
     fun fontSizeChanged() {
-        if (this is RecentsFragment) {
-            (innerBinding.recentsList.adapter as? RecentCallsAdapter)?.apply {
-                fontSize = activity.getTextSize()
-                notifyDataSetChanged()
+        when (this) {
+            is RecentsFragment -> {
+                (innerBinding.recentsList.adapter as? RecentCallsAdapter)?.apply {
+                    fontSize = activity.getTextSize()
+                    notifyDataSetChanged()
+                }
             }
-        } else {
-            (innerBinding.fragmentList?.adapter as? ContactsAdapter)?.apply {
-                fontSize = activity.getTextSize()
-                notifyDataSetChanged()
+            is DialpadFragment -> {
+                (innerBinding.dialpadList?.adapter as? ContactsAdapter)?.apply {
+                    fontSize = activity.getTextSize()
+                    notifyDataSetChanged()
+                }
+            }
+            else -> {
+                (innerBinding.fragmentList?.adapter as? ContactsAdapter)?.apply {
+                    fontSize = activity.getTextSize()
+                    notifyDataSetChanged()
+                }
             }
         }
     }
@@ -74,15 +85,24 @@ abstract class MyViewPagerFragment<BINDING : MyViewPagerFragment.InnerBinding>(c
     interface InnerBinding {
         val fragmentList: MyRecyclerView?
         val recentsList: MyRecyclerView?
+        val dialpadList: MyRecyclerView?
     }
 
     class LettersInnerBinding(val binding: FragmentLettersLayoutBinding) : InnerBinding {
         override val fragmentList: MyRecyclerView = binding.fragmentList
         override val recentsList = null
+        override val dialpadList = null
     }
 
     class RecentsInnerBinding(val binding: FragmentRecentsBinding) : InnerBinding {
         override val fragmentList = null
         override val recentsList = binding.recentsList
+        override val dialpadList = null
+    }
+
+    class DialpadInnerBinding(val binding: FragmentDialpadBinding) : InnerBinding {
+        override val fragmentList = null
+        override val recentsList = null
+        override val dialpadList = binding.dialpadList
     }
 }
