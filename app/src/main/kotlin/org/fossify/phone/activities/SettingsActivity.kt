@@ -299,10 +299,24 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupGroupSubsequentCalls() {
         binding.apply {
+            settingsUngroupSubsequentCallsTypes.beVisibleIf(config.groupSubsequentCalls)
             settingsGroupSubsequentCalls.isChecked = config.groupSubsequentCalls
             settingsGroupSubsequentCallsHolder.setOnClickListener {
                 settingsGroupSubsequentCalls.toggle()
                 config.groupSubsequentCalls = settingsGroupSubsequentCalls.isChecked
+                settingsUngroupSubsequentCallsTypes.beVisibleIf(config.groupSubsequentCalls)
+                setupGroupSubsequentCallsOfSameType()
+            }
+        }
+        setupGroupSubsequentCallsOfSameType()
+    }
+
+    private fun setupGroupSubsequentCallsOfSameType() {
+        binding.apply {
+            settingsUngroupSubsequentCallsTypes.isChecked = config.groupSubsequentCalls && config.ungroupSubsequentCallTypes
+            settingsUngroupSubsequentCallTypesHolder.setOnClickListener {
+                settingsUngroupSubsequentCallsTypes.toggle()
+                config.ungroupSubsequentCallTypes = settingsUngroupSubsequentCallsTypes.isChecked
             }
         }
     }

@@ -311,6 +311,21 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_ungroup_subsequent_call_types_holder"
+                style="@style/SettingsHolderSwitchStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <org.fossify.commons.views.MyMaterialSwitch
+                    android:id="@+id/settings_ungroup_subsequent_calls_types"
+                    style="@style/SettingsSwitchStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/ungroup_subsequent_call_types" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_show_call_confirmation_holder"
                 style="@style/SettingsHolderSwitchStyle"
                 android:layout_width="match_parent"

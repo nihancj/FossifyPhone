@@ -104,6 +104,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(GROUP_SUBSEQUENT_CALLS, true)
         set(groupSubsequentCalls) = prefs.edit().putBoolean(GROUP_SUBSEQUENT_CALLS, groupSubsequentCalls).apply()
 
+    var ungroupSubsequentCallTypes: Boolean
+        get() = prefs.getBoolean(UNGROUP_SUBSEQUENT_CALL_TYPES, true)
+        set(ungroupSubsequentCallTypes) = prefs.edit().putBoolean(UNGROUP_SUBSEQUENT_CALL_TYPES, ungroupSubsequentCallTypes).apply()
+
     var openDialPadAtLaunch: Boolean
         get() = prefs.getBoolean(OPEN_DIAL_PAD_AT_LAUNCH, false)
         set(openDialPad) = prefs.edit().putBoolean(OPEN_DIAL_PAD_AT_LAUNCH, openDialPad).apply()
