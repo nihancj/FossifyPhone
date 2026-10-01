@@ -76,11 +76,13 @@
 
     <!-- Settings -->
     <string name="group_subsequent_calls">Group subsequent calls with the same number at the call log</string>
+    <string name="ungroup_subsequent_call_types">Ungroup subsequent calls of different call types</string>
     <string name="open_dialpad_by_default">Open the dialpad by default when the app opens</string>
     <string name="disable_proximity_sensor">Disable proximity sensor during calls</string>
     <string name="disable_swipe_to_answer">Replace swiping at responding to incoming calls with clicking</string>
     <string name="show_incoming_calls_full_screen">Always display incoming calls on full screen</string>
     <string name="hide_dialpad_numbers">Hide dialpad numbers</string>
+    <string name="show_recent_contacts_when_empty">Show recent contacts when dialpad is empty</string>
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
     <string name="calling_accounts">Calling accounts</string>

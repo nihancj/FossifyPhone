@@ -12,6 +12,7 @@ import org.fossify.commons.helpers.*
 import org.fossify.commons.models.contacts.Contact
 import org.fossify.phone.R
 import org.fossify.phone.activities.SimpleActivity
+import org.fossify.phone.extensions.config
 import org.fossify.phone.extensions.getAvailableSIMCardLabels
 import org.fossify.phone.models.RecentCall
 import org.fossify.phone.models.SIMAccount
@@ -97,7 +98,7 @@ class RecentsHelper(private val context: Context) {
         val differentType = callA.type != callB.type &&
             callA.type + callB.type != 3    // Consider incoming(1) and outgoing(2) as same type
 
-        if (differentSim || differentDay || namesAreBothRealAndDifferent || differentType) return false
+        if (differentSim || differentDay || namesAreBothRealAndDifferent || (differentType && context.config.ungroupSubsequentCallTypes)) return false
 
         @Suppress("DEPRECATION")
         return PhoneNumberUtils.compare(callA.phoneNumber, callB.phoneNumber)
