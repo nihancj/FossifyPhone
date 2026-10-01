@@ -49,6 +49,9 @@ class DialpadFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
     private val longPressTimeout = ViewConfiguration.getLongPressTimeout().toLong()
     private val longPressHandler = Handler(Looper.getMainLooper())
     private val pressedKeys = mutableSetOf<Char>()
+    private var cachedRecentContacts: ArrayList<Contact>? = null
+    private var lastRecentContactsFetchTime: Long = 0L
+    private val CACHE_EXPIRATION_MS = 60_000L
 
     private var hasRussianLocale = false
     private val russianCharsMap by lazy {
@@ -263,7 +266,16 @@ class DialpadFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
         (binding.dialpadList.adapter as? ContactsAdapter)?.finishActMode()
 
         if (text.isEmpty() && context!!.config.showRecentContactsWhenEmpty) {
-            // Display recent contacts when dialpad input is empty
+            val currentTime = System.currentTimeMillis()
+            val cached = cachedRecentContacts
+            if (cached != null) {
+                displayContacts(cached, highlightText = "")
+                if (currentTime - lastRecentContactsFetchTime < CACHE_EXPIRATION_MS) {
+                    // Cache is recent, no need to update
+                    return
+                }
+            }
+            // Fetch Recent Contacts
             RecentsHelper(activity!!).getRecentCalls { recentCalls ->
                 val recentContacts = recentCalls.mapNotNull { recentCall ->
                     // Match recent call with saved contacts, or create a contact entry for unsaved numbers
@@ -286,8 +298,13 @@ class DialpadFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
                         } else null
                 }.distinctBy { it.getPrimaryNumber() }.toMutableList() as ArrayList<Contact>
 
+                cachedRecentContacts = recentContacts
+                lastRecentContactsFetchTime = currentTime
+
                 activity?.runOnUiThread {
-                    displayContacts(recentContacts, highlightText = "")
+                    if (cached == null) {
+                        displayContacts(recentContacts, highlightText = "")
+                    }
                 }
             }
         } else {
