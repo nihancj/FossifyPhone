@@ -262,7 +262,7 @@ class DialpadFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
 
         (binding.dialpadList.adapter as? ContactsAdapter)?.finishActMode()
 
-        if (text.isEmpty()) {
+        if (text.isEmpty() && context!!.config.showRecentContactsWhenEmpty) {
             // Display recent contacts when dialpad input is empty
             RecentsHelper(activity!!).getRecentCalls { recentCalls ->
                 val recentContacts = recentCalls.mapNotNull { recentCall ->

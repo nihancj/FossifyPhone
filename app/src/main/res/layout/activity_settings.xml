@@ -412,6 +412,21 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_show_recent_contacts_when_empty_holder"
+                style="@style/SettingsHolderSwitchStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <org.fossify.commons.views.MyMaterialSwitch
+                    android:id="@+id/settings_show_recent_contacts_when_empty"
+                    style="@style/SettingsSwitchStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/show_recent_contacts_when_empty" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_dialpad_vibration_holder"
                 style="@style/SettingsHolderSwitchStyle"
                 android:layout_width="match_parent"

@@ -111,6 +111,7 @@ class SettingsActivity : SimpleActivity() {
         setupFormatPhoneNumbers()
         setupDialpadVibrations()
         setupDialpadNumbers()
+        setupShowRecentContactsWhenEmpty()
         setupDialpadBeeps()
         setupShowCallConfirmation()
         setupDisableProximitySensor()
@@ -340,6 +341,16 @@ class SettingsActivity : SimpleActivity() {
             settingsHideDialpadNumbersHolder.setOnClickListener {
                 settingsHideDialpadNumbers.toggle()
                 config.hideDialpadNumbers = settingsHideDialpadNumbers.isChecked
+            }
+        }
+    }
+
+    private fun setupShowRecentContactsWhenEmpty() {
+        binding.apply {
+            settingsShowRecentContactsWhenEmpty.isChecked = config.showRecentContactsWhenEmpty
+            settingsShowRecentContactsWhenEmptyHolder.setOnClickListener {
+                settingsShowRecentContactsWhenEmpty.toggle()
+                config.showRecentContactsWhenEmpty = settingsShowRecentContactsWhenEmpty.isChecked
             }
         }
     }

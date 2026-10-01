@@ -128,6 +128,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(HIDE_DIALPAD_NUMBERS, false)
         set(hideDialpadNumbers) = prefs.edit().putBoolean(HIDE_DIALPAD_NUMBERS, hideDialpadNumbers).apply()
 
+    var showRecentContactsWhenEmpty: Boolean
+        get() = prefs.getBoolean(SHOW_RECENT_CONTACTS_WHEN_EMPTY, true)
+        set(showRecentContactsWhenEmpty) = prefs.edit().putBoolean(SHOW_RECENT_CONTACTS_WHEN_EMPTY, showRecentContactsWhenEmpty).apply()
+
     var dialpadBeeps: Boolean
         get() = prefs.getBoolean(DIALPAD_BEEPS, true)
         set(dialpadBeeps) = prefs.edit().putBoolean(DIALPAD_BEEPS, dialpadBeeps).apply()

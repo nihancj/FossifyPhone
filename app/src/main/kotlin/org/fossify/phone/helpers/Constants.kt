@@ -18,6 +18,7 @@ const val WAS_OVERLAY_SNACKBAR_CONFIRMED = "was_overlay_snackbar_confirmed"
 const val DIALPAD_VIBRATION = "dialpad_vibration"
 const val DIALPAD_BEEPS = "dialpad_beeps"
 const val HIDE_DIALPAD_NUMBERS = "hide_dialpad_numbers"
+const val SHOW_RECENT_CONTACTS_WHEN_EMPTY = "show_recent_contacts_when_empty"
 const val ALWAYS_SHOW_FULLSCREEN = "always_show_fullscreen"
 
 const val TAB_DIALPAD = 8
