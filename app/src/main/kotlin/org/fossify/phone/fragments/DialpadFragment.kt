@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.contacts.Contact
+import org.fossify.commons.models.PhoneNumber
 import org.fossify.phone.R
 import org.fossify.phone.activities.MainActivity
 import org.fossify.phone.activities.SimpleActivity
@@ -261,37 +262,71 @@ class DialpadFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
 
         (binding.dialpadList.adapter as? ContactsAdapter)?.finishActMode()
 
-        val filtered = allContacts.asSequence().map { contact ->
-            var convertedName = KeypadHelper.convertKeypadLettersToDigits(
-                contact.name.normalizeString()
-            ).filterNot { it.isWhitespace() }
+        if (text.isEmpty()) {
+            // Display recent contacts when dialpad input is empty
+            RecentsHelper(activity!!).getRecentCalls { recentCalls ->
+                val recentContacts = recentCalls.mapNotNull { recentCall ->
+                    // Match recent call with saved contacts, or create a contact entry for unsaved numbers
+                    allContacts.firstOrNull { it.doesHavePhoneNumber(recentCall.phoneNumber) }
+                        ?: if (recentCall.phoneNumber.isNotEmpty()) {
+                            Contact(
+                                id = recentCall.id,
+                                firstName = recentCall.name,
+                                phoneNumbers = arrayListOf(
+                                    PhoneNumber(
+                                        value = recentCall.phoneNumber,
+                                        type = 0,
+                                        label = "",
+                                        normalizedNumber = recentCall.phoneNumber.normalizePhoneNumber()
+                                    )
+                                ),
+                                photoUri = recentCall.photoUri,
+                                contactId = recentCall.id
+                            )
+                        } else null
+                }.distinctBy { it.getPrimaryNumber() }.toMutableList() as ArrayList<Contact>
 
-            if (hasRussianLocale) {
-                var currConvertedName = ""
-                convertedName.lowercase(Locale.getDefault()).forEach { char ->
-                    val convertedChar = russianCharsMap.getOrElse(char) { char }
-                    currConvertedName += convertedChar
+                activity?.runOnUiThread {
+                    displayContacts(recentContacts, highlightText = "")
                 }
-                convertedName = currConvertedName
             }
-            contact to convertedName
-        }.filter { (contact, convertedName) ->
-            contact.doesContainPhoneNumber(text) || convertedName.contains(text, true)
-        }.sortedWith(compareBy({ (_, convertedName) ->
-            !convertedName.startsWith(text, true)
-        }, { (_, convertedName) ->
-            !convertedName.contains(text, true)
-        }, { (contact, _) ->
-            !contact.doesContainPhoneNumber(text)
-        })).map { it.first }.toMutableList() as ArrayList<Contact>
+        } else {
+            val filtered = allContacts.asSequence().map { contact ->
+                var convertedName = KeypadHelper.convertKeypadLettersToDigits(
+                    contact.name.normalizeString()
+                ).filterNot { it.isWhitespace() }
 
-        binding.letterFastscroller.setupWithContacts(binding.dialpadList, filtered)
+                if (hasRussianLocale) {
+                    var currConvertedName = ""
+                    convertedName.lowercase(Locale.getDefault()).forEach { char ->
+                        val convertedChar = russianCharsMap.getOrElse(char) { char }
+                        currConvertedName += convertedChar
+                    }
+                    convertedName = currConvertedName
+                }
+                contact to convertedName
+            }.filter { (contact, convertedName) ->
+                contact.doesContainPhoneNumber(text) || convertedName.contains(text, true)
+            }.sortedWith(compareBy({ (_, convertedName) ->
+                !convertedName.startsWith(text, true)
+            }, { (_, convertedName) ->
+                !convertedName.contains(text, true)
+            }, { (contact, _) ->
+                !contact.doesContainPhoneNumber(text)
+            })).map { it.first }.toMutableList() as ArrayList<Contact>
+
+            displayContacts(filtered, highlightText = text)
+        }
+    }
+
+    private fun displayContacts(contacts: ArrayList<Contact>, highlightText: String) {
+        binding.letterFastscroller.setupWithContacts(binding.dialpadList, contacts)
 
         ContactsAdapter(
             activity = activity!!,
-            contacts = filtered,
+            contacts = contacts,
             recyclerView = binding.dialpadList,
-            highlightText = text,
+            highlightText = highlightText,
             itemClick = {
                 activity!!.startCallWithConfirmationCheck(it as Contact)
                 clearInputWithDelay()
@@ -302,8 +337,8 @@ class DialpadFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
             binding.dialpadList.adapter = this
         }
 
-        binding.dialpadPlaceholder.beVisibleIf(filtered.isEmpty())
-        binding.dialpadList.beVisibleIf(filtered.isNotEmpty())
+        binding.dialpadPlaceholder.beVisibleIf(contacts.isEmpty())
+        binding.dialpadList.beVisibleIf(contacts.isNotEmpty())
     }
 
     private fun initCall(number: String = binding.dialpadInput.value, name: String? = null) {
